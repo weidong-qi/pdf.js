@@ -21,7 +21,6 @@ import {
   FSI,
   getEditorSelector,
   getRect,
-  getSerialized,
   kbRedo,
   kbUndo,
   loadAndWait,
@@ -29,7 +28,6 @@ import {
   PDI,
   switchToEditor,
   waitForPointerUp,
-  waitForSerialized,
   waitForTextToBe,
   waitForTimeout,
 } from "./test_utils.mjs";
@@ -427,6 +425,13 @@ describe("Signature Editor", () => {
           await page.click("#editorSignatureAddSignature");
           await page.waitForSelector("#addSignatureDialog", { visible: true });
           await page.click("#addSignatureDrawButton");
+          const thicknessSelector = "#addSignatureDrawThickness";
+          await page.focus(thicknessSelector);
+          await page.keyboard.press("End");
+          const thickness = await page.$eval(
+            thicknessSelector,
+            el => el.valueAsNumber
+          );
           const { x, y, width, height } = await getRect(
             page,
             "#addSignatureDraw"
@@ -439,12 +444,11 @@ describe("Signature Editor", () => {
           await awaitPromise(clickHandle);
           await page.waitForSelector(`${addButtonSelector}:not(:disabled)`);
           await page.click(addButtonSelector);
-          await waitForSerialized(page, 1);
-
-          const [{ thickness }] = await getSerialized(page);
-          const strokeWidth = await page.$eval(
-            ".canvasWrapper > svg[stroke-width]",
-            el => parseFloat(el.getAttribute("stroke-width"))
+          const stroke = await page.waitForSelector(
+            ".canvasWrapper > svg[stroke-width]"
+          );
+          const strokeWidth = await stroke.evaluate(el =>
+            parseFloat(el.getAttribute("stroke-width"))
           );
           expect(strokeWidth)
             .withContext(browserName)
